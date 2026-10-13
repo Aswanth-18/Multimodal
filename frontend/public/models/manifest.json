@@ -1,0 +1,8 @@
+{
+  "_help": "List .obj files (converted with tools/convert_obj.py) per vessel. Vessels with no files, and the RCA trunk, are drawn procedurally.",
+  "LAD": [],
+  "LCX": [],
+  "RCA": ["rca_conus_branch.obj", "rca_marginal_branch.obj", "rca_anterior_ventricular_branch.obj",
+          "rca_sinoatrial_nodal_branch.obj", "rca_posterior_ventricular_branch.obj",
+          "rca_anterior_atrial_branch.obj", "rca_av_nodal_branch.obj"]
+}

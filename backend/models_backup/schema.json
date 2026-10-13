@@ -1,0 +1,716 @@
+[
+ {
+  "label": "Age",
+  "category": "Demographic",
+  "unit": "years",
+  "kind": "number",
+  "options": null,
+  "name": "Age",
+  "default": 58.0,
+  "min": 30.0,
+  "max": 86.0
+ },
+ {
+  "label": "Sex",
+  "category": "Demographic",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "Female",
+   "1": "Male"
+  },
+  "name": "Sex",
+  "default": 1.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Weight",
+  "category": "Demographic",
+  "unit": "kg",
+  "kind": "number",
+  "options": null,
+  "name": "Weight",
+  "default": 74.0,
+  "min": 48.0,
+  "max": 120.0
+ },
+ {
+  "label": "Height",
+  "category": "Demographic",
+  "unit": "cm",
+  "kind": "number",
+  "options": null,
+  "name": "Length",
+  "default": 165.0,
+  "min": 140.0,
+  "max": 188.0
+ },
+ {
+  "label": "BMI",
+  "category": "Demographic",
+  "unit": "kg/m\u00b2",
+  "kind": "number",
+  "options": null,
+  "name": "BMI",
+  "default": 26.775510204081634,
+  "min": 18.115412710007302,
+  "max": 40.90065778377467
+ },
+ {
+  "label": "Diabetes mellitus",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "DM",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Hypertension",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "HTN",
+  "default": 1.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Current smoker",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Current Smoker",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Ex-smoker",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "EX-Smoker",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Family history of CAD",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "FH",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Obesity",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Obesity",
+  "default": 1.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Chronic renal failure",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "CRF",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Stroke history (CVA)",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "CVA",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Airway disease",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Airway disease",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Thyroid disease",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Thyroid Disease",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Congestive heart failure",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "CHF",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Dyslipidemia",
+  "category": "History & risk factors",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "DLP",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Systolic blood pressure",
+  "category": "Clinical exam",
+  "unit": "mmHg",
+  "kind": "number",
+  "options": null,
+  "name": "BP",
+  "default": 130.0,
+  "min": 90.0,
+  "max": 190.0
+ },
+ {
+  "label": "Pulse rate",
+  "category": "Clinical exam",
+  "unit": "bpm",
+  "kind": "number",
+  "options": null,
+  "name": "PR",
+  "default": 70.0,
+  "min": 50.0,
+  "max": 110.0
+ },
+ {
+  "label": "Edema",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Edema",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Weak peripheral pulse",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Weak Peripheral Pulse",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Lung rales",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Lung rales",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Systolic murmur",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Systolic Murmur",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Diastolic murmur",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Diastolic Murmur",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Typical chest pain",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Typical Chest Pain",
+  "default": 1.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Dyspnea",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Dyspnea",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Atypical chest pain",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Atypical",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Non-anginal chest pain",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Nonanginal",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Low-threshold angina",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "LowTH Ang",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Functional class (0-3)",
+  "category": "Clinical exam",
+  "unit": "",
+  "kind": "ordinal",
+  "options": {
+   "0": "0",
+   "1": "I",
+   "2": "II",
+   "3": "III"
+  },
+  "name": "Function Class",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "label": "Q wave",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Q Wave",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "ST elevation",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "St Elevation",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "ST depression",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "St Depression",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "T-wave inversion",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Tinversion",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Left ventricular hypertrophy",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "LVH",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Poor R-wave progression",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "Poor R Progression",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Left bundle branch block",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "LBBB",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Right bundle branch block",
+  "category": "ECG",
+  "unit": "",
+  "kind": "binary",
+  "options": {
+   "0": "No",
+   "1": "Yes"
+  },
+  "name": "RBBB",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "label": "Fasting blood sugar",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "FBS",
+  "default": 98.0,
+  "min": 62.0,
+  "max": 400.0
+ },
+ {
+  "label": "Creatinine",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "CR",
+  "default": 1.0,
+  "min": 0.5,
+  "max": 2.2
+ },
+ {
+  "label": "Triglycerides",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "TG",
+  "default": 122.0,
+  "min": 37.0,
+  "max": 1050.0
+ },
+ {
+  "label": "LDL cholesterol",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "LDL",
+  "default": 100.0,
+  "min": 18.0,
+  "max": 232.0
+ },
+ {
+  "label": "HDL cholesterol",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "HDL",
+  "default": 39.0,
+  "min": 15.9,
+  "max": 111.0
+ },
+ {
+  "label": "Blood urea nitrogen",
+  "category": "Laboratory",
+  "unit": "mg/dL",
+  "kind": "number",
+  "options": null,
+  "name": "BUN",
+  "default": 16.0,
+  "min": 6.0,
+  "max": 52.0
+ },
+ {
+  "label": "ESR",
+  "category": "Laboratory",
+  "unit": "mm/h",
+  "kind": "number",
+  "options": null,
+  "name": "ESR",
+  "default": 15.0,
+  "min": 1.0,
+  "max": 90.0
+ },
+ {
+  "label": "Hemoglobin",
+  "category": "Laboratory",
+  "unit": "g/dL",
+  "kind": "number",
+  "options": null,
+  "name": "HB",
+  "default": 13.2,
+  "min": 8.9,
+  "max": 17.6
+ },
+ {
+  "label": "Potassium",
+  "category": "Laboratory",
+  "unit": "mEq/L",
+  "kind": "number",
+  "options": null,
+  "name": "K",
+  "default": 4.2,
+  "min": 3.0,
+  "max": 6.6
+ },
+ {
+  "label": "Sodium",
+  "category": "Laboratory",
+  "unit": "mEq/L",
+  "kind": "number",
+  "options": null,
+  "name": "Na",
+  "default": 141.0,
+  "min": 128.0,
+  "max": 156.0
+ },
+ {
+  "label": "White blood cells",
+  "category": "Laboratory",
+  "unit": "cells/\u00b5L",
+  "kind": "number",
+  "options": null,
+  "name": "WBC",
+  "default": 7100.0,
+  "min": 3700.0,
+  "max": 18000.0
+ },
+ {
+  "label": "Lymphocytes",
+  "category": "Laboratory",
+  "unit": "%",
+  "kind": "number",
+  "options": null,
+  "name": "Lymph",
+  "default": 32.0,
+  "min": 7.0,
+  "max": 60.0
+ },
+ {
+  "label": "Neutrophils",
+  "category": "Laboratory",
+  "unit": "%",
+  "kind": "number",
+  "options": null,
+  "name": "Neut",
+  "default": 60.0,
+  "min": 32.0,
+  "max": 89.0
+ },
+ {
+  "label": "Platelets",
+  "category": "Laboratory",
+  "unit": "10\u00b3/\u00b5L",
+  "kind": "number",
+  "options": null,
+  "name": "PLT",
+  "default": 210.0,
+  "min": 25.0,
+  "max": 742.0
+ },
+ {
+  "label": "Ejection fraction (echo)",
+  "category": "Echocardiography",
+  "unit": "%",
+  "kind": "number",
+  "options": null,
+  "name": "EF-TTE",
+  "default": 50.0,
+  "min": 15.0,
+  "max": 60.0
+ },
+ {
+  "label": "Regions with wall-motion abnormality",
+  "category": "Echocardiography",
+  "unit": "regions (0-4)",
+  "kind": "ordinal",
+  "options": {
+   "0": "0",
+   "1": "1",
+   "2": "2",
+   "3": "3",
+   "4": "4"
+  },
+  "name": "Region RWMA",
+  "default": 0.0,
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "label": "Valvular heart disease",
+  "category": "Echocardiography",
+  "unit": "",
+  "kind": "ordinal",
+  "options": {
+   "0": "None",
+   "1": "Mild",
+   "2": "Moderate",
+   "3": "Severe"
+  },
+  "name": "VHD",
+  "default": 1.0,
+  "min": 0.0,
+  "max": 3.0
+ }
+]
