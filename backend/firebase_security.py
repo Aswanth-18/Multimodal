@@ -1,4 +1,4 @@
-"""Firebase identity verification and approved-doctor authorization."""
+"""Firebase identity verification and role-based authorization."""
 import hashlib
 import os
 from functools import lru_cache
@@ -46,6 +46,13 @@ def firestore_client():
         raise HTTPException(503, "Firebase services are temporarily unavailable.") from exc
 
 
+def _doctor_profile(user: dict) -> dict:
+    snapshot = firestore_client().collection("doctors").document(user["uid"]).get()
+    if not snapshot.exists:
+        return {}
+    return snapshot.to_dict() or {}
+
+
 def verified_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> dict:
@@ -65,13 +72,26 @@ def verified_user(
 
 
 def approved_doctor(user: dict = Depends(verified_user)) -> dict:
-    profile = firestore_client().collection("doctors").document(user["uid"]).get()
-    if not profile.exists:
+    profile = _doctor_profile(user)
+    if not profile:
         raise HTTPException(403, "Doctor registration is required.")
-    data = profile.to_dict() or {}
-    if data.get("status") != "approved":
+    role = profile.get("role", "doctor")
+    if role == "master":
+        return {**user, "doctor_profile": profile, "role": role}
+    if role != "doctor":
+        raise HTTPException(403, "This account does not have an authorized role.")
+    if profile.get("status") == "rejected":
+        raise HTTPException(403, "Doctor account was rejected. Contact the master administrator.")
+    if profile.get("status") != "approved":
         raise HTTPException(403, "Doctor account approval is pending.")
-    return {**user, "doctor_profile": data}
+    return {**user, "doctor_profile": profile, "role": role}
+
+
+def master_user(user: dict = Depends(verified_user)) -> dict:
+    profile = _doctor_profile(user)
+    if profile.get("role") != "master":
+        raise HTTPException(403, "Master access is required.")
+    return {**user, "doctor_profile": profile, "role": "master"}
 
 
 def patient_code_key(uid: str, patient_code: str) -> str:

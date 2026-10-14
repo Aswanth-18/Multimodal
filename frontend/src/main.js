@@ -1,7 +1,8 @@
 import { createScene } from "./scene.js";
 import {
-  addConsultation, createPatient, getConsultations, getDoctorProfile, getMetrics, getPatient,
-  getHealth, getPatients, getPresets, getSchema, predict, saveDoctorProfile, updatePatient,
+  addConsultation, createPatient, decideDoctorRegistration, getConsultations, getDoctorProfile,
+  getDoctorRegistrations, getMetrics, getPatient, getHealth, getPatients, getPresets, getSchema,
+  predict, saveDoctorProfile, updatePatient,
 } from "./api.js";
 import { probToCSS, riskLabel, pct } from "./colors.js";
 import {
@@ -166,13 +167,14 @@ function fillPatientForm(patient, editMode = false) {
   form.elements.namedItem("consultation_date").value = new Date().toISOString().slice(0, 10);
   form.elements.namedItem("patient_code").disabled = Boolean(patient);
   $("#patient-form-title").textContent = patient ? `Patient: ${patient.name}` : "Add patient and consultation";
-  form.querySelector('[type="submit"]').hidden = Boolean(patient);
+  form.querySelector('[type="submit"]').hidden = Boolean(patient) || !isMaster();
   $("#save-consultation").hidden = !patient;
   $("#update-patient").hidden = !patient;
   $("#view-history").hidden = !patient;
   $("#update-patient").dataset.editMode = String(editMode);
   state.selectedPatient = patient ?? null;
 }
+const isMaster = () => state.profile?.role === "master";
 function patientDetailsFromForm(form) {
   const ageText = formValue(form, "age");
   return {
@@ -231,6 +233,17 @@ async function loadDashboard() {
     `<button class="recent-record" data-patient-id="${escapeHTML(patient.id)}"><strong>${escapeHTML(patient.name)}</strong><span>${escapeHTML(patient.latest_consultation_date)} · ${escapeHTML(patient.latest_diagnosis)}</span></button>`
   ).join("") || `<p class="muted">No patient records yet.</p>`;
 }
+async function loadDoctorRegistrations() {
+  const registrations = await getDoctorRegistrations(await authToken());
+  const tbody = $("#doctor-registration-body");
+  tbody.innerHTML = registrations.map((doctor) => `<tr>
+    <td>${escapeHTML(doctor.full_name)}</td><td>${escapeHTML(doctor.email)}</td>
+    <td>${escapeHTML(doctor.doctor_id)}</td><td>${escapeHTML(doctor.status)}</td>
+    <td class="table-actions">${doctor.status !== "approved" ? `
+      <button data-doctor-action="approved" data-uid="${escapeHTML(doctor.uid)}">Approve</button>
+      <button data-doctor-action="rejected" data-uid="${escapeHTML(doctor.uid)}">Reject</button>` : "—"}</td></tr>`).join("");
+  $("#doctor-registration-empty").hidden = registrations.length > 0;
+}
 async function showHistory(patientId) {
   const patient = await getPatient(await authToken(), patientId);
   const consultations = await getConsultations(state.token, patientId);
@@ -246,9 +259,12 @@ async function showHistory(patientId) {
   $("#patient-history").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 function showPage(page) {
+  if (page === "doctor-approvals" && !isMaster()) return;
+  if (page === "patient-form" && !isMaster() && !state.selectedPatient) return;
   for (const name of ["risk", "dashboard", "patient-form", "patients", "profile"]) {
     $(`#page-${name}`).hidden = name !== page;
   }
+  $("#page-doctor-approvals").hidden = page !== "doctor-approvals";
   document.querySelectorAll(".app-nav [data-page]").forEach((button) => {
     button.classList.toggle("on", button.dataset.page === page);
   });
@@ -258,11 +274,14 @@ function showPage(page) {
     loadDashboard().catch((error) => showNotice(error.message, true));
   } else if (page === "patients") {
     loadPatientRows($("#patient-search").value).catch((error) => showNotice(error.message, true));
+  } else if (page === "doctor-approvals") {
+    loadDoctorRegistrations().catch((error) => showNotice(error.message, true));
   } else if (page === "profile") {
     const user = state.user, profile = state.profile;
     $("#profile-details").innerHTML = `<dl class="profile-list"><dt>Name</dt><dd>${escapeHTML(profile.full_name)}</dd>
-      <dt>Email</dt><dd>${escapeHTML(user.email)}</dd><dt>Doctor ID</dt><dd>${escapeHTML(profile.doctor_id)}</dd>
-      <dt>Approval</dt><dd>${escapeHTML(profile.status)}</dd></dl>`;
+      <dt>Email</dt><dd>${escapeHTML(user.email)}</dd><dt>Role</dt><dd>${escapeHTML(profile.role)}</dd>
+      ${profile.role === "doctor" ? `<dt>Doctor ID</dt><dd>${escapeHTML(profile.doctor_id)}</dd>
+      <dt>Approval</dt><dd>${escapeHTML(profile.status)}</dd>` : ""}</dl>`;
   }
 }
 async function refreshSelectedPatient() {
@@ -275,6 +294,10 @@ function bindPatientUI() {
   });
   $("#patient-form").onsubmit = async (event) => {
     event.preventDefault();
+    if (!isMaster()) {
+      showNotice("Only the master can add patient records.", true);
+      return;
+    }
     const form = event.currentTarget;
     if (!form.reportValidity()) return;
     const patient = patientDetailsFromForm(form);
@@ -352,6 +375,19 @@ function bindPatientUI() {
     const button = event.target.closest("[data-patient-id]");
     if (button) showHistory(button.dataset.patientId).catch((error) => showNotice(error.message, true));
   };
+  $("#doctor-registration-body").onclick = async (event) => {
+    const button = event.target.closest("button[data-doctor-action]");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await decideDoctorRegistration(await authToken(), button.dataset.uid, button.dataset.doctorAction);
+      showNotice(`Doctor registration ${button.dataset.doctorAction}.`);
+      await loadDoctorRegistrations();
+    } catch (error) {
+      button.disabled = false;
+      showNotice(error.message, true);
+    }
+  };
 }
 
 // ---------- authenticated app startup ----------
@@ -361,10 +397,16 @@ async function bootApplication(user, profile) {
   state.token = await user.getIdToken();
   $("#auth-screen").hidden = true;
   $("#app-shell").hidden = false;
-  $("#doctor-label").textContent = `${profile.full_name} · ${user.email}`;
-  const photo = $("#doctor-photo");
-  photo.hidden = !user.photoURL;
-  if (user.photoURL) photo.src = user.photoURL;
+  const displayName = profile.full_name || user.displayName || user.email;
+  $("#doctor-label").textContent = `${displayName} · ${user.email} · ${profile.role}`;
+  $("#doctor-avatar").textContent = Array.from(displayName.trim())[0]?.toLocaleUpperCase() ?? "?";
+  document.querySelector('[data-page="doctor-approvals"]').hidden = !isMaster();
+  document.querySelector('[data-page="patient-form"]').hidden = !isMaster();
+  $("#page-dashboard h2").textContent = isMaster() ? "Master dashboard" : "Doctor dashboard";
+  $("#page-dashboard>p").textContent = isMaster()
+    ? "Patient records and doctor registrations managed by the master account."
+    : "Records and consultations assigned to your approved doctor account.";
+  $("#page-profile h2").textContent = isMaster() ? "Master profile" : "Doctor profile";
   if (state.booted) {
     showPage("risk");
     return;
@@ -468,6 +510,10 @@ async function handleAuthState(user) {
   try {
     const token = await user.getIdToken();
     const profile = await getDoctorProfile(token);
+    if (profile?.role === "master") {
+      await bootApplication(user, profile);
+      return;
+    }
     if (!profile?.doctor_id) {
       showAuthMode("onboarding");
       $("#doctor-onboarding").elements.namedItem("full_name").value = user.displayName ?? "";
@@ -476,7 +522,9 @@ async function handleAuthState(user) {
     }
     if (profile.status !== "approved") {
       showAuthMode("pending");
-      $("#approval-message").textContent = "Your registration is submitted for approval. Patient records and AI prediction remain unavailable until an administrator approves your doctor profile.";
+      $("#approval-message").textContent = profile.status === "rejected"
+        ? "Your doctor registration was rejected. Contact the master administrator if you believe this is an error."
+        : "Your registration is submitted for approval. Patient records and AI prediction remain unavailable until the master approves your doctor profile.";
       return;
     }
     await bootApplication(user, profile);

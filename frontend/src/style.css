@@ -105,7 +105,7 @@ th{color:var(--muted);font-weight:600} tr.best td{color:#fff;font-weight:600;bac
 .notice{margin:12px auto;padding:10px 14px;max-width:960px;border:1px solid #53698b;border-radius:8px;background:#1a2b45;color:var(--text)}
 .notice.error{border-color:#a9434d;background:#3a1d27;color:#ffdadd}
 .top{gap:12px}.doctor-badge{margin-left:auto;display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12px}
-.doctor-badge img{width:34px;height:34px;border-radius:50%;object-fit:cover}
+.doctor-badge #doctor-avatar{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:#23476c;color:#fff;font-weight:700;font-size:15px}
 .app-nav{display:flex;gap:8px;overflow:auto;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
 .app-nav button{white-space:nowrap}.app-nav button.on{background:#23476c;border-color:var(--accent)}
 .page-card{margin:16px;max-width:1200px}.page-card h2{margin-bottom:8px}.page-card h3{margin:24px 0 10px}

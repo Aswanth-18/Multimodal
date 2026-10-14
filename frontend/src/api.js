@@ -20,6 +20,11 @@ export const getDoctorProfile = (token) => authFetch("/api/auth/profile", token)
 export const saveDoctorProfile = (token, profile) => authFetch("/api/auth/profile", token, {
   method: "POST", body: JSON.stringify(profile),
 });
+export const getDoctorRegistrations = (token) => authFetch("/api/master/doctors", token);
+export const decideDoctorRegistration = (token, uid, status) =>
+  authFetch(`/api/master/doctors/${encodeURIComponent(uid)}/decision`, token, {
+    method: "POST", body: JSON.stringify({ status }),
+  });
 export const predict = (values, signal, token) => authFetch("/api/predict", token, {
   method: "POST", body: JSON.stringify({ values }), signal,
 });

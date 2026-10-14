@@ -19,10 +19,11 @@ Frontend development (hot reload; API proxy in `vite.config.js`):
 cd frontend && npm install && npm run dev      # production build: npm run build
 ```
 
-## Doctor access and patient records
-The prediction screen and patient-record APIs require a Firebase-authenticated doctor whose
-Firestore profile has been explicitly approved by an administrator. New email accounts must
-verify their email; Google sign-in is supported. Registration alone never grants access.
+## Master and doctor access
+The application has two roles, stored in `doctors/{firebase_uid}.role`: `master` and `doctor`.
+New registrations are always assigned the `doctor` role by the backend and start as pending.
+Doctors cannot set their own role. New email accounts must verify their email; Google sign-in is
+supported.
 
 1. Create a Firebase project, enable **Authentication → Email/Password** and **Google**, create a
    Web App, and enable Cloud Firestore. Add `localhost` to Authentication's authorized domains.
@@ -41,10 +42,13 @@ verify their email; Google sign-in is supported. Registration alone never grants
    installed, run `gcloud auth application-default login`. Never put service-account JSON in
    frontend files or commit it. Set `FRONTEND_ORIGIN` only when using a non-default frontend origin.
 5. Start the backend and frontend using the commands above. Vite proxies `/api` to port 8000.
-6. A doctor registers or signs in and submits their full name and registration number. Until
-   reviewed, their profile is `pending`. A trusted administrator verifies the doctor and changes
-   `doctors/{firebase_uid}.status` to `approved` in the Firebase Console. Do not expose an
-   approval endpoint to ordinary users.
+6. Create the trusted master account through Firebase Authentication, then create its
+   `doctors/{firebase_uid}` Firestore document with `role: "master"` and a `full_name`. Assign this
+   role only in the Firebase Console using a trusted administrator account; never expose a
+   self-service role assignment. Doctors register and submit their full name and registration
+   number; they remain pending until the master approves or rejects them from **Doctor Approvals**.
+7. Only the master can create patient records. Approved doctors can use prediction and access the
+   patient records scoped to their own doctor UID.
 
 Patient data is scoped under `doctors/{uid}/patients/{record_id}` and each consultation is a
 separate document in its `consultations` subcollection. The patient ID/clinic record number is

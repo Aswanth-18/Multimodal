@@ -11,10 +11,10 @@
   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm1 15h-2v-2h2v2Zm0-4h-2V9h2v4Z"/></svg>
   <span><strong>Decision-support &amp; educational use only.</strong> Predictions come from a statistical model trained on 303 patients and are <strong>not a substitute for formal diagnostic imaging</strong> (e.g. coronary angiography) or clinical judgement.</span>
 </div>
-<section id="auth-screen" class="auth-screen" aria-label="Doctor sign in">
+<section id="auth-screen" class="auth-screen" aria-label="Secure sign in">
   <div class="auth-card">
     <h1>CardioScope<span>3D</span></h1>
-    <p class="muted">Secure doctor access</p>
+    <p class="muted">Secure master and doctor access</p>
     <div id="backend-status" class="backend-status" data-state="connecting" role="status" aria-live="polite">Connecting to CardioScope3D backend…</div>
     <div id="auth-error" class="notice error" role="alert" hidden></div>
     <div id="auth-config-warning" class="notice" hidden>Firebase client configuration is required. Copy <code>frontend/.env.example</code> to <code>frontend/.env.local</code> and add your Firebase Web App configuration.</div>
@@ -35,27 +35,28 @@
       <button type="button" id="show-login" class="text-button">Back to sign in</button>
     </form>
     <form id="doctor-onboarding" hidden>
-      <p>Complete your doctor registration. Access remains blocked until an administrator approves this profile.</p>
+      <p>Complete your doctor registration. Access remains blocked until the master approves this profile.</p>
       <label>Full name<input name="full_name" autocomplete="name" required maxlength="160"></label>
       <label>Doctor ID / registration number<input name="doctor_id" required minlength="2" maxlength="64" pattern="[A-Za-z0-9._/-]+"></label>
       <button type="submit" class="primary">Submit for approval</button>
     </form>
     <div id="approval-wait" hidden><p id="approval-message"></p><button type="button" id="pending-logout">Log out</button></div>
     <button type="button" id="google-login" class="google-button">Continue with Google</button>
-    <p class="muted small">New accounts remain pending until an administrator verifies and approves the doctor profile.</p>
+    <p class="muted small">New doctor accounts remain pending until approved by the master.</p>
   </div>
 </section>
 <div id="app-shell" hidden>
 <header class="top">
   <h1>CardioScope<span>3D</span></h1>
   <p>Coronary artery disease risk, mapped onto the arteries</p>
-  <div class="doctor-badge"><img id="doctor-photo" alt="" hidden><span id="doctor-label"></span><button id="logout">Log out</button></div>
+  <div class="doctor-badge"><span id="doctor-avatar" aria-hidden="true"></span><span id="doctor-label"></span><button id="logout">Log out</button></div>
 </header>
-<nav class="app-nav" aria-label="Doctor dashboard">
+<nav class="app-nav" aria-label="Application navigation">
   <button data-page="dashboard">Dashboard</button>
   <button data-page="risk">AI Risk Assessment</button>
   <button data-page="patient-form">Add Patient</button>
   <button data-page="patients">Patient Records</button>
+  <button data-page="doctor-approvals" hidden>Doctor Approvals</button>
   <button data-page="profile">Doctor Profile</button>
 </nav>
 <div id="app-notice" class="notice" role="status" hidden></div>
@@ -134,6 +135,14 @@
   <section id="patient-history" hidden><h3>Consultation history: <span id="history-patient-name"></span></h3><div id="consultation-list"></div></section>
 </main>
 <main id="page-profile" class="page-card" hidden><h2>Doctor profile</h2><div id="profile-details"></div></main>
+<main id="page-doctor-approvals" class="page-card" hidden>
+  <h2>Doctor registrations</h2>
+  <p class="muted">Review pending registrations. Rejected registrations can be approved later if reconsidered.</p>
+  <div class="table-scroll"><table class="patient-table"><thead><tr>
+    <th>Name</th><th>Email</th><th>Doctor ID</th><th>Status</th><th>Actions</th>
+  </tr></thead><tbody id="doctor-registration-body"></tbody></table></div>
+  <div id="doctor-registration-empty" class="muted" hidden>No doctor registrations found.</div>
+</main>
 <footer class="foot">Trained on the Extension of the Z-Alizadeh Sani dataset (UCI) · LAD/LCX/RCA/Cath excluded from inputs to prevent target leakage · RCA branch meshes: BodyParts3D (CC BY-SA 2.1 JP)</footer>
 </div>
 <script type="module" src="/src/main.js"></script>

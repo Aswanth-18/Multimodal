@@ -3,16 +3,52 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from backend import firebase_security
 from backend.app import R, app
-from backend.firebase_security import approved_doctor
+from backend.firebase_security import approved_doctor, master_user
 from backend.ml.data import load
 from google.auth.exceptions import DefaultCredentialsError
 
 
 X, Y = load()
+
+
+class FakeDoctorSnapshot:
+    def __init__(self, profile):
+        self.exists = profile is not None
+        self.profile = profile
+
+    def to_dict(self):
+        return self.profile
+
+
+class FakeDoctorDocument:
+    def __init__(self, profile):
+        self.profile = profile
+
+    def get(self):
+        return FakeDoctorSnapshot(self.profile)
+
+
+class FakeDoctorCollection:
+    def __init__(self, profile):
+        self.profile = profile
+
+    def document(self, _uid):
+        return FakeDoctorDocument(self.profile)
+
+
+class FakeDoctorDatabase:
+    def __init__(self, profile):
+        self.profile = profile
+
+    def collection(self, _name):
+        return FakeDoctorCollection(self.profile)
+
 
 def test_backend_environment_loader_only_imports_server_settings(tmp_path, monkeypatch):
     env_file = tmp_path / ".env.local"
@@ -59,6 +95,7 @@ def test_api_health_and_prediction_contract():
     assert client.get("/api/patients").status_code == 401
     assert client.get("/api/auth/profile").status_code == 401
     assert client.get("/api/presets").status_code == 401
+    assert client.get("/api/master/doctors").status_code == 401
     health = client.get("/api/health")
     assert health.status_code == 200
     payload = health.json()
@@ -100,6 +137,59 @@ def test_api_health_and_prediction_contract():
         assert invalid.status_code == 422
     finally:
         app.dependency_overrides.pop(approved_doctor, None)
+
+
+def test_firestore_role_controls_master_and_doctor_access(monkeypatch):
+    monkeypatch.setattr(
+        firebase_security,
+        "firestore_client",
+        lambda: FakeDoctorDatabase({"role": "master"}),
+    )
+    master = approved_doctor({"uid": "master-id"})
+    assert master["role"] == "master"
+    assert master_user({"uid": "master-id"})["role"] == "master"
+
+    monkeypatch.setattr(
+        firebase_security,
+        "firestore_client",
+        lambda: FakeDoctorDatabase({"role": "doctor", "status": "approved"}),
+    )
+    assert approved_doctor({"uid": "doctor-id"})["role"] == "doctor"
+    with pytest.raises(HTTPException) as error:
+        master_user({"uid": "doctor-id"})
+    assert error.value.status_code == 403
+
+
+def test_unapproved_and_rejected_doctors_are_denied(monkeypatch):
+    for status in ("pending", "rejected"):
+        monkeypatch.setattr(
+            firebase_security,
+            "firestore_client",
+            lambda status=status: FakeDoctorDatabase({"role": "doctor", "status": status}),
+        )
+        with pytest.raises(HTTPException) as error:
+            approved_doctor({"uid": "doctor-id"})
+        assert error.value.status_code == 403
+
+
+def test_patient_creation_requires_master_role(monkeypatch):
+    monkeypatch.setattr(
+        firebase_security,
+        "firestore_client",
+        lambda: FakeDoctorDatabase({"role": "doctor", "status": "approved"}),
+    )
+    app.dependency_overrides[firebase_security.verified_user] = lambda: {"uid": "doctor-id"}
+    try:
+        response = TestClient(app).post("/api/patients", json={
+            "patient_code": "P-1",
+            "name": "Test Patient",
+            "age": 50,
+            "consultation": {"consultation_date": "2026-10-14"},
+        })
+    finally:
+        app.dependency_overrides.pop(firebase_security.verified_user, None)
+    assert response.status_code == 403
+    assert response.json()["detail"] == "Master access is required."
 
 
 def test_missing_firebase_admin_credentials_returns_service_unavailable(monkeypatch):

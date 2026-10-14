@@ -1,5 +1,6 @@
 """Firestore-backed doctor-owned patient records and consultation history."""
 from datetime import date, datetime, timezone
+from typing import Literal
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,7 +8,14 @@ from firebase_admin import firestore
 from google.api_core.exceptions import GoogleAPICallError
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .firebase_security import approved_doctor, audit_record, firestore_client, patient_code_key, verified_user
+from .firebase_security import (
+    approved_doctor,
+    audit_record,
+    firestore_client,
+    master_user,
+    patient_code_key,
+    verified_user,
+)
 
 router = APIRouter(prefix="/api")
 
@@ -23,6 +31,10 @@ class DoctorProfileUpdate(BaseModel):
         if not value:
             raise ValueError("This field is required.")
         return value
+
+
+class DoctorDecision(BaseModel):
+    status: Literal["approved", "rejected"]
 
 
 class PatientDetails(BaseModel):
@@ -120,7 +132,11 @@ def _require_patient(ref):
 @router.get("/auth/profile")
 def get_doctor_profile(user: dict = Depends(verified_user)):
     snapshot = firestore_client().collection("doctors").document(user["uid"]).get()
-    return snapshot.to_dict() if snapshot.exists else None
+    if not snapshot.exists:
+        return None
+    profile = snapshot.to_dict() or {}
+    profile.setdefault("role", "doctor")
+    return profile
 
 
 @router.post("/auth/profile")
@@ -129,12 +145,15 @@ def save_doctor_profile(payload: DoctorProfileUpdate, user: dict = Depends(verif
     ref = db.collection("doctors").document(user["uid"])
     snapshot = ref.get()
     current = snapshot.to_dict() if snapshot.exists else {}
+    if current.get("role", "doctor") != "doctor":
+        raise HTTPException(403, "Only doctor accounts can submit a doctor profile.")
     if current.get("status") == "approved" and current.get("doctor_id") != payload.doctor_id:
         raise HTTPException(403, "An approved doctor's registration ID cannot be changed.")
     if current.get("doctor_id") and current["doctor_id"] != payload.doctor_id:
         raise HTTPException(409, "A doctor registration ID cannot be changed after submission.")
     profile = {
         "uid": user["uid"],
+        "role": "doctor",
         "email": user.get("email", ""),
         "full_name": payload.full_name.strip(),
         "doctor_id": payload.doctor_id.strip(),
@@ -148,6 +167,55 @@ def save_doctor_profile(payload: DoctorProfileUpdate, user: dict = Depends(verif
     except GoogleAPICallError as exc:
         raise HTTPException(503, "Unable to save doctor registration right now.") from exc
     return {**profile, "created_at": current.get("created_at"), "updated_at": None}
+
+
+@router.get("/master/doctors")
+def list_doctor_registrations(user: dict = Depends(master_user)):
+    doctors = firestore_client().collection("doctors").stream()
+    registrations = []
+    for snapshot in doctors:
+        profile = snapshot.to_dict() or {}
+        if profile.get("role", "doctor") != "doctor":
+            continue
+        registrations.append({
+            "uid": snapshot.id,
+            "full_name": profile.get("full_name", ""),
+            "email": profile.get("email", ""),
+            "doctor_id": profile.get("doctor_id", ""),
+            "status": profile.get("status", "pending"),
+        })
+    registrations.sort(key=lambda item: (item["status"] != "pending", item["full_name"].casefold()))
+    return registrations
+
+
+@router.post("/master/doctors/{doctor_uid}/decision")
+def decide_doctor_registration(
+    doctor_uid: str,
+    payload: DoctorDecision,
+    user: dict = Depends(master_user),
+):
+    if doctor_uid == user["uid"]:
+        raise HTTPException(400, "A master account cannot review itself as a doctor.")
+    db = firestore_client()
+    ref = db.collection("doctors").document(doctor_uid)
+    snapshot = ref.get()
+    if not snapshot.exists:
+        raise HTTPException(404, "Doctor registration not found.")
+    profile = snapshot.to_dict() or {}
+    if profile.get("role", "doctor") != "doctor" or not profile.get("doctor_id"):
+        raise HTTPException(404, "Doctor registration not found.")
+    if profile.get("status") == "approved":
+        raise HTTPException(409, "This doctor account is already approved.")
+    try:
+        ref.update({
+            "role": "doctor",
+            "status": payload.status,
+            "reviewed_by": user["uid"],
+            "reviewed_at": firestore.SERVER_TIMESTAMP,
+        })
+    except GoogleAPICallError as exc:
+        raise HTTPException(503, "Unable to update the doctor registration right now.") from exc
+    return {"uid": doctor_uid, "status": payload.status}
 
 
 def _list_patients(db, uid: str, q: str):
@@ -176,7 +244,7 @@ def search_patients(payload: PatientSearch, user: dict = Depends(approved_doctor
 
 
 @router.post("/patients", status_code=201)
-def create_patient(payload: PatientCreate, user: dict = Depends(approved_doctor)):
+def create_patient(payload: PatientCreate, user: dict = Depends(master_user)):
     db = firestore_client()
     uid = user["uid"]
     patient_id = uuid4().hex
