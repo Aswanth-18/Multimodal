@@ -2,13 +2,23 @@
 Run:  uvicorn backend.app:app --port 8000
 """
 import json
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / "backend" / ".env")
+
 import numpy as np, pandas as pd, joblib, shap
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from google.api_core.exceptions import GoogleAPICallError
+from .firebase_security import approved_doctor
+from .patient_records import router as patient_router
 
 ROOT = Path(__file__).resolve().parents[1]
 MODELS, RES, DIST = ROOT / "backend" / "models", ROOT / "results", ROOT / "frontend" / "dist"
@@ -48,10 +58,25 @@ class Registry:
 
 R = Registry()
 app = FastAPI(title="Cardio-3D risk API")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        os.getenv("FRONTEND_ORIGIN", "http://localhost:5173"),
+        "http://127.0.0.1:5173",
+    ],
+    allow_methods=["GET", "POST", "PUT"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+app.include_router(patient_router)
+
+@app.exception_handler(GoogleAPICallError)
+async def firebase_api_error(request, exc):
+    print("FIREBASE ERROR:", repr(exc))
+    return JSONResponse(status_code=503, content={"detail": "Firebase services are temporarily unavailable."})
+
 
 class Patient(BaseModel):
-    values: dict[str, float] = {}
+    values: dict[str, float] = Field(default_factory=dict)
 
 @app.get("/api/health")
 def health(): return {"ok": True, "targets": list(R.models)}
@@ -60,7 +85,7 @@ def health(): return {"ok": True, "targets": list(R.models)}
 def schema(): return R.schema
 
 @app.get("/api/presets")
-def presets(): return R.presets
+def presets(user: dict = Depends(approved_doctor)): return R.presets
 
 @app.get("/api/metrics")
 def metrics():
@@ -68,7 +93,7 @@ def metrics():
         return json.load(fh)
 
 @app.post("/api/predict")
-def predict(p: Patient, top_k: int = 8):
+def predict(p: Patient, top_k: int = 8, user: dict = Depends(approved_doctor)):
     unknown = set(p.values) - set(R.features)
     if unknown: raise HTTPException(422, f"Unknown features: {sorted(unknown)}")
     x = R.frame(p.values)

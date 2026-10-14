@@ -1,1 +1,1 @@
-export default { server: { port: 5173, proxy: { "/api": "http://localhost:8000", "/results": "http://localhost:8000" } } };
+export default { server: { port: 5173, proxy: { "/api": "http://127.0.0.1:8000", "/results": "http://127.0.0.1:8000" } } };

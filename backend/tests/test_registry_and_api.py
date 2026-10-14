@@ -1,14 +1,36 @@
 import math
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from fastapi.testclient import TestClient
 
+from backend import firebase_security
 from backend.app import R, app
+from backend.firebase_security import approved_doctor
 from backend.ml.data import load
+from google.auth.exceptions import DefaultCredentialsError
 
 
 X, Y = load()
+
+def test_backend_environment_loader_only_imports_server_settings(tmp_path, monkeypatch):
+    env_file = tmp_path / ".env.local"
+    env_file.write_text(
+        "FIREBASE_PROJECT_ID=test-project\n"
+        "GOOGLE_APPLICATION_CREDENTIALS=C:/secure/service-account.json\n"
+        "VITE_FIREBASE_API_KEY=frontend-only\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("FIREBASE_PROJECT_ID", raising=False)
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
+    monkeypatch.delenv("VITE_FIREBASE_API_KEY", raising=False)
+
+    firebase_security._load_backend_environment(env_file)
+
+    assert firebase_security.os.environ["FIREBASE_PROJECT_ID"] == "test-project"
+    assert firebase_security.os.environ["GOOGLE_APPLICATION_CREDENTIALS"] == "C:/secure/service-account.json"
+    assert "VITE_FIREBASE_API_KEY" not in firebase_security.os.environ
 
 
 def test_dataset_and_targets_load():
@@ -34,6 +56,9 @@ def test_every_model_loads_and_predicts():
 
 def test_api_health_and_prediction_contract():
     client = TestClient(app)
+    assert client.get("/api/patients").status_code == 401
+    assert client.get("/api/auth/profile").status_code == 401
+    assert client.get("/api/presets").status_code == 401
     health = client.get("/api/health")
     assert health.status_code == 200
     payload = health.json()
@@ -60,13 +85,34 @@ def test_api_health_and_prediction_contract():
         "ESR": 12, "HB": 14.5, "K": 4.2, "Na": 140, "WBC": 7.1, "Lymph": 30, "Neut": 60,
         "PLT": 220, "EF-TTE": 60, "Region RWMA": 0, "VHD": 0,
     }
-    response = client.post("/api/predict", json={"values": example})
-    assert response.status_code == 200
-    body = response.json()
-    for target, prob in body["probabilities"].items():
-        assert math.isfinite(prob)
-        assert 0.0 <= prob <= 1.0
-        assert target in body["explanations"]
+    assert client.post("/api/predict", json={"values": example}).status_code == 401
+    app.dependency_overrides[approved_doctor] = lambda: {"uid": "test-doctor"}
+    try:
+        assert client.get("/api/presets").status_code == 200
+        response = client.post("/api/predict", json={"values": example})
+        assert response.status_code == 200
+        body = response.json()
+        for target, prob in body["probabilities"].items():
+            assert math.isfinite(prob)
+            assert 0.0 <= prob <= 1.0
+            assert target in body["explanations"]
+        invalid = client.post("/api/predict", json={"values": {"Bogus": 42}})
+        assert invalid.status_code == 422
+    finally:
+        app.dependency_overrides.pop(approved_doctor, None)
 
-    invalid = client.post("/api/predict", json={"values": {"Bogus": 42}})
-    assert invalid.status_code == 422
+
+def test_missing_firebase_admin_credentials_returns_service_unavailable(monkeypatch):
+    monkeypatch.setattr(firebase_security, "_firebase_app", lambda: object())
+
+    def missing_credentials(*_args, **_kwargs):
+        raise DefaultCredentialsError("test credentials missing")
+
+    monkeypatch.setattr(firebase_security.auth, "verify_id_token", missing_credentials)
+    response = TestClient(app).get(
+        "/api/auth/profile",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Firebase server credentials are not configured."

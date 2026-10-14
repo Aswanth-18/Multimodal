@@ -11,55 +11,131 @@
   <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm1 15h-2v-2h2v2Zm0-4h-2V9h2v4Z"/></svg>
   <span><strong>Decision-support &amp; educational use only.</strong> Predictions come from a statistical model trained on 303 patients and are <strong>not a substitute for formal diagnostic imaging</strong> (e.g. coronary angiography) or clinical judgement.</span>
 </div>
+<section id="auth-screen" class="auth-screen" aria-label="Doctor sign in">
+  <div class="auth-card">
+    <h1>CardioScope<span>3D</span></h1>
+    <p class="muted">Secure doctor access</p>
+    <div id="backend-status" class="backend-status" data-state="connecting" role="status" aria-live="polite">Connecting to CardioScope3D backend…</div>
+    <div id="auth-error" class="notice error" role="alert" hidden></div>
+    <div id="auth-config-warning" class="notice" hidden>Firebase client configuration is required. Copy <code>frontend/.env.example</code> to <code>frontend/.env.local</code> and add your Firebase Web App configuration.</div>
+    <form id="login-form">
+      <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+      <label>Password<span class="password-field"><input name="password" type="password" autocomplete="current-password" required minlength="8"><button type="button" class="password-toggle" data-password-toggle>Show</button></span></label>
+      <button type="submit" class="primary">Sign in</button>
+      <button type="button" id="forgot-password" class="text-button">Forgot password?</button>
+      <button type="button" id="show-register" class="text-button">Register as a doctor</button>
+    </form>
+    <form id="register-form" hidden>
+      <label>Full name<input name="full_name" autocomplete="name" required maxlength="160"></label>
+      <label>Doctor ID / registration number<input name="doctor_id" required minlength="2" maxlength="64" pattern="[A-Za-z0-9._/-]+" title="Use letters, numbers, dot, underscore, slash, or hyphen"></label>
+      <label>Email<input name="email" type="email" autocomplete="email" required maxlength="254"></label>
+      <label>Password<span class="password-field"><input name="password" type="password" autocomplete="new-password" required minlength="8"><button type="button" class="password-toggle" data-password-toggle>Show</button></span></label>
+      <label>Confirm password<input name="confirm_password" type="password" autocomplete="new-password" required minlength="8"></label>
+      <button type="submit" class="primary">Create doctor account</button>
+      <button type="button" id="show-login" class="text-button">Back to sign in</button>
+    </form>
+    <form id="doctor-onboarding" hidden>
+      <p>Complete your doctor registration. Access remains blocked until an administrator approves this profile.</p>
+      <label>Full name<input name="full_name" autocomplete="name" required maxlength="160"></label>
+      <label>Doctor ID / registration number<input name="doctor_id" required minlength="2" maxlength="64" pattern="[A-Za-z0-9._/-]+"></label>
+      <button type="submit" class="primary">Submit for approval</button>
+    </form>
+    <div id="approval-wait" hidden><p id="approval-message"></p><button type="button" id="pending-logout">Log out</button></div>
+    <button type="button" id="google-login" class="google-button">Continue with Google</button>
+    <p class="muted small">New accounts remain pending until an administrator verifies and approves the doctor profile.</p>
+  </div>
+</section>
+<div id="app-shell" hidden>
 <header class="top">
   <h1>CardioScope<span>3D</span></h1>
   <p>Coronary artery disease risk, mapped onto the arteries</p>
+  <div class="doctor-badge"><img id="doctor-photo" alt="" hidden><span id="doctor-label"></span><button id="logout">Log out</button></div>
 </header>
-<main class="layout">
+<nav class="app-nav" aria-label="Doctor dashboard">
+  <button data-page="dashboard">Dashboard</button>
+  <button data-page="risk">AI Risk Assessment</button>
+  <button data-page="patient-form">Add Patient</button>
+  <button data-page="patients">Patient Records</button>
+  <button data-page="profile">Doctor Profile</button>
+</nav>
+<div id="app-notice" class="notice" role="status" hidden></div>
+<main id="page-risk" class="layout">
   <aside class="panel form" aria-label="Patient inputs">
-    <div class="panel-head">
-      <h2>Patient data</h2>
-      <div class="presets" id="presets"></div>
-    </div>
+    <div class="panel-head"><h2>Patient data</h2><div class="presets" id="presets"></div></div>
     <div id="form" class="form-body"></div>
   </aside>
-
   <section class="stage" aria-label="3D heart viewer">
     <canvas id="c"></canvas>
-    <div class="viewbar" id="viewbar">
+    <div class="viewbar" id="viewbar" aria-label="Heart camera views">
       <button data-v="front">Front</button><button data-v="back">Back</button>
       <button data-v="left">Left</button><button data-v="right">Right</button><button data-v="top">Top</button>
+      <button data-v="reset" id="camera-reset">Reset</button>
     </div>
-    <div class="legend" aria-label="Colour legend">
-      <span>Stenosis probability</span>
-      <div class="bar"></div>
-      <div class="ticks"><span>0%</span><span>Low</span><span>Moderate</span><span>High</span><span>100%</span></div>
+    <div class="model-status" id="model-status" data-state="loading" role="status" aria-live="polite">
+      <span id="model-status-text">Loading anatomical heart model…</span>
+      <a href="https://github.com/w3lld1/heart-atlas/tree/8e46df9a3528c6bcda1bc1e60c4a06d00d178191/assets/models/heart"
+         target="_blank" rel="noreferrer">Heart Atlas / BodyParts3D · CC BY-SA 4.0</a>
     </div>
-    <div class="hint">Drag to rotate · scroll to zoom · click an artery for details</div>
+    <div class="legend" aria-label="AI-predicted vessel stenosis probability colour legend"><span>AI-predicted stenosis probability</span><div class="bar"></div><div class="ticks"><span>0%</span><span>Low</span><span>Moderate</span><span>High</span><span>100%</span></div></div>
+    <div class="hint">Drag or touch to rotate · scroll or pinch to zoom · select an artery for its AI estimate</div>
     <div class="tip" id="tip" hidden></div>
     <div class="vessel-card" id="vcard" hidden></div>
     <div class="status" id="status">Loading…</div>
   </section>
-
   <aside class="panel results" aria-label="Results">
     <div class="tabs" role="tablist">
       <button class="tab on" data-tab="risk" role="tab">Risk &amp; explanation</button>
       <button class="tab" data-tab="perf" role="tab">Model performance</button>
     </div>
     <div id="tab-risk">
-      <div id="cad-card" class="cad-card"></div>
-      <div id="vessel-rows" class="vessel-rows"></div>
-      <div class="explain-head">
-        <h3>Why this prediction?</h3>
-        <div class="seg" id="target-seg"></div>
-      </div>
-      <p class="muted small" id="explain-note"></p>
-      <div id="drivers" class="drivers"></div>
+      <div id="cad-card" class="cad-card"></div><div id="vessel-rows" class="vessel-rows"></div>
+      <div class="explain-head"><h3>Why this prediction?</h3><div class="seg" id="target-seg"></div></div>
+      <p class="muted small" id="explain-note"></p><div id="drivers" class="drivers"></div>
     </div>
     <div id="tab-perf" hidden></div>
   </aside>
 </main>
+<main id="page-dashboard" class="page-card" hidden>
+  <h2>Doctor dashboard</h2><p class="muted">Records and consultations assigned to your approved doctor account.</p>
+  <div class="stats"><article><span>Total patients</span><strong id="patient-count">—</strong></article><article><span>Recent consultations</span><strong id="consultation-count">—</strong></article></div>
+  <h3>Recently updated records</h3><div id="recent-patients" class="record-list">Loading patient records…</div>
+</main>
+<main id="page-patient-form" class="page-card" hidden>
+  <h2 id="patient-form-title">Add patient and consultation</h2>
+  <p class="muted">AI estimates are saved as model output, not as a confirmed clinical diagnosis.</p>
+  <form id="patient-form" class="record-form">
+    <input name="record_id" type="hidden">
+    <label>Patient ID / clinic record number<input name="patient_code" required maxlength="64" pattern="[A-Za-z0-9._/-]+"></label>
+    <label>Patient name<input name="name" required maxlength="160"></label>
+    <div class="form-pair"><label>Date of birth<input name="date_of_birth" type="date"></label><label>Age<input name="age" type="number" min="0" max="125"></label></div>
+    <label>Sex, if clinically relevant<input name="sex" maxlength="40"></label>
+    <label>Contact information<input name="contact" maxlength="200" autocomplete="off"></label>
+    <label>Medical history<textarea name="medical_history" maxlength="5000"></textarea></label>
+    <div class="form-pair"><label>Consultation date<input name="consultation_date" type="date" required></label><label>Symptoms<textarea name="symptoms" maxlength="5000"></textarea></label></div>
+    <label>Diagnosis<textarea name="diagnosis" maxlength="5000"></textarea></label>
+    <label>Test results<textarea name="test_results" maxlength="10000"></textarea></label>
+    <label>Treatment / prescription<textarea name="treatment" maxlength="5000"></textarea></label>
+    <label>Doctor's notes<textarea name="notes" maxlength="10000"></textarea></label>
+    <label class="checkbox-label"><input name="include_ai_prediction" type="checkbox"> Save the current AI estimate and its model inputs with this consultation</label>
+    <div class="form-actions">
+      <button type="submit" class="primary">Save patient</button>
+      <button type="button" id="save-consultation" hidden>Add consultation</button>
+      <button type="button" id="update-patient" hidden>Update patient details</button>
+      <button type="button" id="clear-patient-form">Clear form</button>
+      <button type="button" id="view-history" hidden>View history</button>
+    </div>
+  </form>
+</main>
+<main id="page-patients" class="page-card" hidden>
+  <h2>Patient records</h2><label>Search by patient ID or name<input id="patient-search" type="search" autocomplete="off" maxlength="160"></label>
+  <div id="patients-loading" class="muted" hidden>Loading records…</div>
+  <div class="table-scroll"><table class="patient-table"><thead><tr><th>Patient ID</th><th>Patient Name</th><th>Latest Consultation</th><th>Latest Diagnosis</th><th>Actions</th></tr></thead><tbody id="patient-table-body"></tbody></table></div>
+  <div id="patient-empty" class="muted" hidden>No patient records found.</div>
+  <section id="patient-history" hidden><h3>Consultation history: <span id="history-patient-name"></span></h3><div id="consultation-list"></div></section>
+</main>
+<main id="page-profile" class="page-card" hidden><h2>Doctor profile</h2><div id="profile-details"></div></main>
 <footer class="foot">Trained on the Extension of the Z-Alizadeh Sani dataset (UCI) · LAD/LCX/RCA/Cath excluded from inputs to prevent target leakage · RCA branch meshes: BodyParts3D (CC BY-SA 2.1 JP)</footer>
+</div>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
